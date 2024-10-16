@@ -15,7 +15,7 @@ app = FastAPI(
 )
 
 # Подключение маршрутизаторов
-app.include_router(auth.router, prefix='/auth_api/v1/auth', tags=['auth'])
+app.include_router(auth.router, prefix='/mess_api/v1/auth', tags=['auth'])
 app.include_router(health_router)
 
 if __name__ == '__main__':

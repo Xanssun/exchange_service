@@ -1,7 +1,9 @@
 from http import HTTPStatus
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi.encoders import jsonable_encoder
 from schemas.entity import UserCreate, UserInDB, UserSignIn
+from services.auth import AuthService, get_auth_service
 
 router = APIRouter()
 
@@ -15,8 +17,15 @@ router = APIRouter()
 )
 async def singup(
     user_create: UserCreate,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
-    pass
+    user = await auth_service.signup(user_create)
+    if not user:
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail='Already exists user with such email',
+        )
+    return user
 
 @router.post(
     '/signin',
@@ -28,6 +37,7 @@ async def singup(
 async def signin(
     response: Response,
     user_signin: UserSignIn,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     pass
 
@@ -41,5 +51,6 @@ async def signin(
 )
 async def refresh_token(
     response: Response,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     pass

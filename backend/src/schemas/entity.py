@@ -17,7 +17,7 @@ class UserInDB(BaseModel):
     email: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class UserSignIn(BaseModel):
