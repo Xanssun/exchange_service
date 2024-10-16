@@ -3,7 +3,7 @@ version: '3.8'
 services:
   db:
     image: postgres:15.4
-    container_name: postgres-db
+    container_name: db
     env_file: .env
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -20,6 +20,19 @@ services:
     restart: always
     ports:
       - "6379:6379"
+
+  mess_service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mess_service
+    depends_on:
+      - db
+      - redis
+    env_file: .env
+    ports:
+      - "8080:8080"
+
 
 volumes:
   mess_postgres_data:
