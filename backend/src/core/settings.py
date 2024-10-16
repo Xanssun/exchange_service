@@ -17,6 +17,6 @@ class Settings(BaseSettings):
     redis_port: int = int(os.getenv('REDIS_PORT', 6379))
 
     mess_api_host: str = os.getenv('FAST_API_HOST', '0.0.0.0')
-    mess_api_port: int = int(os.getenv('FAST_API_PORT', 8002))
+    mess_api_port: int = int(os.getenv('FAST_API_PORT', 8000))
 
 settings = Settings()
