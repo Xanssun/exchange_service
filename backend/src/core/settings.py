@@ -7,6 +7,7 @@ load_dotenv()
 
 class Settings(BaseSettings):
     project_name: str = 'messages_service'
+    
     db_name: str = os.getenv('DB_NAME', 'messages')
     db_user: str = os.getenv('DB_USER', 'app')
     db_password: str = os.getenv('DB_PASSWORD', 'emptystring')
@@ -18,5 +19,10 @@ class Settings(BaseSettings):
 
     mess_api_host: str = os.getenv('FAST_API_HOST', '0.0.0.0')
     mess_api_port: int = int(os.getenv('FAST_API_PORT', 8000))
+
+    auth_token_lifetime: int = int(os.getenv('AUTH_TOKEN_LIFETIME', 360))
+    auth_refresh_token_lifetime: int = int(os.getenv('AUTH_REFRESH_TOKEN_LIFETIME', 3600))
+    auth_refresh_token_length: int = int(os.getenv('AUTH_REFRESH_TOKEN_LENGTH', 32))
+    auth_secret: str = os.getenv('AUTH_SECRET', 'privedmedved')
 
 settings = Settings()
