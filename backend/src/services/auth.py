@@ -8,7 +8,7 @@ from models.entity import RefreshToken, Token, User
 from schemas.entity import UserCreate, UserSignIn
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from tools.get_user_from_base import get_user_by_email
+from tools.user_utils import get_user_by_email, get_user_by_id
 
 
 class AuthService():
@@ -34,7 +34,7 @@ class AuthService():
         if user:
             password_ok = user.check_password(user_signin.password)
             if (password_ok and check_pass) or not check_pass:
-                user_id = user_id
+                user_id = user.id
 
                 refresh_token = await self._create_refresh_token(user_id=user_id)
                 token = Token(user_id=user_id)
@@ -42,7 +42,7 @@ class AuthService():
                 return {
                     'user': user,
                     'token': token.token,
-                    'refresh_token': refresh_token.refresh_token,  # Возвращаем refresh_token для дальнейшего использования
+                    'refresh_token': refresh_token.refresh_token,
                     'expires': refresh_token.expires.strftime(
                         '%Y-%m-%d %H:%M:%S'
                     ),
@@ -50,7 +50,7 @@ class AuthService():
 
     async def refresh_token(self, refresh_token: RefreshToken) -> dict:
         """Обновление рефреш токена"""
-        user = await self._get_user_by_id(id=refresh_token.user_id)
+        user = await get_user_by_id(self.db_session, refresh_token.user_id)
         if user:
             new_refresh_token = await self._renew_refresh_token(
                 refresh_token=refresh_token
@@ -84,12 +84,6 @@ class AuthService():
         await self.db_session.commit()
         await self.db_session.refresh(refresh_token)
         return refresh_token
-    
-    async def _get_user_by_id(self, id: UUID):
-        """Получаем пользователя по id"""
-        statement = select(User).where(User.id == id)
-        query = await self.db_session.execute(statement)
-        return query.scalars().first()
     
     async def _renew_refresh_token(
         self, refresh_token: RefreshToken

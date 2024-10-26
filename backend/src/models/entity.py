@@ -86,7 +86,6 @@ class Token:
             {
                 'user_id': str(self.user_id),
                 'expires': self.expires,
-                'role': self.role,
             },
             settings.auth_secret,
             algorithm='HS256',
@@ -98,7 +97,7 @@ class Token:
         return True
 
     def __repr__(self) -> str:
-        return f"<Token {self.user_id}, roles = {', '.join(self.role)}, expires = {self.expires}>"
+        return f"<Token {self.user_id}, expires = {self.expires}>"
 
 
 class RefreshToken(Base):

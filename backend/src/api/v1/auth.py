@@ -1,7 +1,6 @@
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from fastapi.encoders import jsonable_encoder
 from schemas.entity import UserCreate, UserInDB, UserSignIn
 from services.auth import AuthService, get_auth_service
 
@@ -39,7 +38,15 @@ async def signin(
     user_signin: UserSignIn,
     auth_service: AuthService = Depends(get_auth_service),
 ):
-    pass
+    tokens = await auth_service.signin(user_signin, check_pass=True)
+    if not tokens:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN,
+            detail='Invalid email or password',
+        )
+    response.set_cookie(key='token', value=tokens['token'], httponly=True)
+    response.set_cookie(key='refresh_token', value=tokens['refresh_token'], httponly=True)
+    return tokens['user']
 
 
 @router.post(
