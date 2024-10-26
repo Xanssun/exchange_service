@@ -18,9 +18,14 @@ app = FastAPI(
 app.include_router(auth.router, prefix='/mess_api/v1/auth', tags=['auth'])
 app.include_router(health_router)
 
-if __name__ == '__main__':
+@app.on_event("startup")
+async def startup_event():
     redis.redis = Redis(host=settings.redis_host, port=settings.redis_port)
+    await redis.redis.ping()  # Проверка соединения
 
+
+
+if __name__ == '__main__':
     uvicorn.run(
         'main:app',
         host=settings.mess_api_host,

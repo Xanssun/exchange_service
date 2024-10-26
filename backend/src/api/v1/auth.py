@@ -1,7 +1,10 @@
 from http import HTTPStatus
+from typing import Annotated
 
+from core.tokens import security_refresh_token
 from fastapi import APIRouter, Depends, HTTPException, Response
-from schemas.entity import UserCreate, UserInDB, UserSignIn
+from models.entity import RefreshToken, Token
+from schemas.entity import Result, UserCreate, UserInDB, UserSignIn
 from services.auth import AuthService, get_auth_service
 
 router = APIRouter()
@@ -44,8 +47,9 @@ async def signin(
             status_code=HTTPStatus.FORBIDDEN,
             detail='Invalid email or password',
         )
-    response.set_cookie(key='token', value=tokens['token'], httponly=True)
-    response.set_cookie(key='refresh_token', value=tokens['refresh_token'], httponly=True)
+    response.headers['X-Access-Token'] = tokens['token']
+    response.headers['X-Refresh-Token'] = tokens['refresh_token']
+
     return tokens['user']
 
 
@@ -61,3 +65,20 @@ async def refresh_token(
     auth_service: AuthService = Depends(get_auth_service),
 ):
     pass
+
+
+@router.post(
+    '/logout',
+    response_model=Result,
+    status_code=HTTPStatus.OK,
+    summary='Выход',
+    description='Выход',
+)
+async def logout(
+    refresh_token: Annotated[RefreshToken, Depends(security_refresh_token)],
+    auth_service: AuthService = Depends(get_auth_service),
+) -> Result:
+    result = await auth_service.logout(refresh_token=refresh_token)
+    if result:
+        return Result(success=True)
+    return Result(success=False)

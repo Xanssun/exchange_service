@@ -24,3 +24,8 @@ class UserSignIn(BaseModel):
     """Схема для аутентификации пользователя"""
     email: str
     password: str
+
+
+class Result(BaseModel):
+    """Схема для ответа сервера"""
+    success: bool

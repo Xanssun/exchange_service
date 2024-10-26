@@ -7,6 +7,8 @@ from redis.asyncio import Redis
 redis: Optional[Redis] = None
 
 async def get_redis() -> Redis:
+    if redis is None:
+        raise ValueError("Cache storage (tokens_cache) не инициализирован")
     return redis
 
 class AsyncCacheStorage(ABC):

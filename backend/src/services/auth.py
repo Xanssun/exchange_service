@@ -3,7 +3,7 @@ from uuid import UUID
 
 from db.postgres import get_session
 from db.redis import AsyncCacheStorage, get_redis
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from models.entity import RefreshToken, Token, User
 from schemas.entity import UserCreate, UserSignIn
 from sqlalchemy import select
@@ -67,14 +67,47 @@ class AuthService():
             }
         
     async def logout(self, refresh_token: RefreshToken) -> bool:
-        """
-        Выход
-        """
+        """Выход"""
+        if await self._get_revoked_refresh_token_from_cache(refresh_token.refresh_token):
+            raise HTTPException(status_code=403, detail="Токен аннулирован")
+        
         await self._put_revoked_refresh_token_to_cache(
             refresh_token.refresh_token
         )
 
         return True
+    
+    async def get_refresh_token(
+        self, refresh_token: str
+    ):
+        """Проверяем рефреш токен, что нет в отозванных и что вообще такой есть"""
+        is_revoked = await self._get_revoked_refresh_token_from_cache(
+            refresh_token
+        )
+        if is_revoked:
+            return None
+
+        statement = select(RefreshToken).where(
+            RefreshToken.refresh_token == refresh_token,
+            RefreshToken.expires >= datetime.now(),
+        )
+        query = await self.db_session.execute(statement)
+        return query.scalars().first()
+
+    async def _put_revoked_refresh_token_to_cache(
+        self, refresh_token: str
+    ) -> None:
+        """Сохраняем рефреш токен в кеш как отозваный"""
+        await self.tokens_cache.set(refresh_token, '1')
+
+    async def _get_revoked_refresh_token_from_cache(
+        self, refresh_token: str
+    ) -> bool:
+        """Проверяем есть ли такой отозванный рефреш токен"""
+        data = await self.tokens_cache.get(refresh_token)
+        if data:
+            return True
+        return False
 
     async def _create_refresh_token(self, user_id: UUID) -> RefreshToken:
         """Создаем новый refresh_token"""
@@ -94,41 +127,9 @@ class AuthService():
         await self.db_session.refresh(refresh_token)
         return refresh_token
 
-    async def get_refresh_token(
-        self, refresh_token: str
-    ):
-        """Проверяем рефреш токен, что нет в отозванных и что вообще такой есть"""
-        is_revoked = await self._get_revoked_refresh_token_from_cache(
-            refresh_token
-        )
-        if is_revoked:
-            return None
-
-        statement = select(RefreshToken).where(
-            RefreshToken.refresh_token == refresh_token,
-            RefreshToken.expires >= datetime.now(),
-        )
-        query = await self.db_session.execute(statement)
-        return query.scalars().first()
-
-    async def _get_revoked_refresh_token_from_cache(
-        self, refresh_token: str
-    ) -> bool:
-        """Проверяем есть ли такой отозванный рефреш токен"""
-        data = await self.tokens_cache.get(refresh_token)
-        if data:
-            return True
-        return False
-
-    async def _put_revoked_refresh_token_to_cache(
-        self, refresh_token: str
-    ) -> None:
-        """Сохраняем рефреш токен в кеш как отозваный"""
-        await self.tokens_cache.set(refresh_token, '1')
-
 
 def get_auth_service(
     db_session: AsyncSession = Depends(get_session),
     tokens_cache: AsyncCacheStorage = Depends(get_redis),
-) -> AuthService:
+):
     return AuthService(db_session=db_session, tokens_cache=tokens_cache)
