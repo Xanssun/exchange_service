@@ -62,9 +62,19 @@ async def signin(
 )
 async def refresh_token(
     response: Response,
+    refresh_token: Annotated[RefreshToken, Depends(security_refresh_token)],
     auth_service: AuthService = Depends(get_auth_service),
 ):
-    pass
+    tokens = await auth_service.refresh_token(refresh_token)
+    if not tokens:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail='Unauthorized',
+        )
+    response.headers['X-Access-Token'] = tokens['token']
+    response.headers['X-Refresh-Token'] = tokens['refresh_token']
+
+    return tokens['user']
 
 
 @router.post(
