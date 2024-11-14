@@ -25,4 +25,7 @@ class Settings(BaseSettings):
     auth_refresh_token_length: int = int(os.getenv('AUTH_REFRESH_TOKEN_LENGTH', 32))
     auth_secret: str = os.getenv('AUTH_SECRET', 'privedmedved')
 
+    yandexclientid: str = '5c2105e6f04147df9ce4861c7a996025'
+    yandexclientsecret: str = 'c836c696aa5347149dc05e7dc396dbf2'
+
 settings = Settings()
